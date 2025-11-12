@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Greek Quiz — Assessment Center</title>
+  <style>
+    :root{ --bg:#f7fafc; --card:#fff; --accent:#2b6cb0; --muted:#666; --success:#2f855a; --danger:#e53e3e }
+    body{margin:0;font-family:Inter, system-ui, "Noto Sans", "Noto Sans Greek", Arial;background:var(--bg);color:#111}
+    header{padding:1rem;border-bottom:1px solid #eef2f6;background:#fff;display:flex;justify-content:space-between;align-items:center}
+    main{max-width:900px;margin:1rem auto;padding:1rem}
+    .card{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 2px 12px rgba(12,20,40,0.04)}
+    .question{font-size:1.05rem}
+    .choices{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+    .choice{padding:.6rem;border-radius:8px;border:1px solid #eef4fb;cursor:pointer}
+    .choice:hover{background:#f6fbff}
+    .controls{display:flex;gap:.5rem;margin-top:1rem}
+    .btn{padding:.5rem .7rem;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid #e6eef9}
+    .result{padding:.8rem;border-radius:8px;margin-top:1rem}
+    .small{font-size:.9rem;color:var(--muted)}
+    footer{max-width:900px;margin:0 auto;padding:1rem;text-align:center;color:var(--muted)}
+    input[type="text"]{padding:.5rem;border-radius:8px;border:1px solid #eef4fb;width:100%}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <strong>Assessment Center</strong>
+      <div class="small">Test your skills — choose level and topic, or follow a recommended quiz.</div>
+    </div>
+    <div>
+      <a href="index.html" class="small" style="color:var(--accent);text-decoration:none">Back to Lessons</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" id="quizCard">
+      <div id="setup">
+        <label class="small">Select level:
+          <select id="levelSelect">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </label>
+        <label class="small" style="margin-left:1rem">Number of questions:
+          <select id="countSelect"><option>5</option><option selected>10</option><option>15</option></select>
+        </label>
+        <div style="margin-top:.6rem">
+          <button id="startBtn" class="btn">Start Quiz</button>
+          <button id="startQuick" class="btn ghost">Quick Recommended</button>
+        </div>
+      </div>
+
+      <div id="quizView" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="small" id="qmeta">Question <span id="qIndex">1</span> / <span id="qTotal">10</span></div>
+          <div class="small">Level: <span id="qLevel">beginner</span></div>
+        </div>
+
+        <div id="questionBlock" style="margin-top:.8rem">
+          <!-- question injected here -->
+        </div>
+
+        <div class="controls">
+          <button id="prevBtn" class="btn ghost">Previous</button>
+          <button id="nextBtn" class="btn ghost">Next</button>
+          <button id="submitBtn" class="btn">Submit Quiz</button>
+        </div>
+      </div>
+
+      <div id="resultView" style="display:none"></div>
+    </div>
+  </main>
+
+  <footer>
+    Results saved locally. You can review quizzes later.
+  </footer>
+
+  <script>
+    // Simple questions store — prefilled; in production this would be larger or fetched
+    const QUESTIONS = [
+      // Beginner
+      { id:'q1', level:'beginner', topic:'vocab', type:'mcq', prompt:"What does 'καλημέρα' mean?", choices:["Good night","Good morning","Thank you","Please"], answer:1, explanation:"καλημέρα = good morning."},
+      { id:'q2', level:'beginner', topic:'vocab', type:'fill', prompt:"Type the Greek for 'thank you'", answer:["ευχαριστώ","ευχαριστω"], explanation:"ευχαριστώ = thank you."},
+      { id:'q3', level:'beginner', topic:'grammar', type:'mcq', prompt:"Which article is feminine?", choices:["ο","η","το"], answer:1, explanation:"η is the feminine definite article."},
+      { id:'q4', level:'beginner', topic:'listening', type:'audio-mc', prompt:"Listen and choose the correct word you hear", audioText:"γεια σου", choices:["καλημέρα","γεια σου","ευχαριστώ"], answer:1, explanation:"The audio says 'γεια σου' (hello)."},
+      // Intermediate
+      { id:'q5', level:'intermediate', topic:'verbs', type:'fill', prompt:"Aorist of 'γράφω' (I wrote)", answer:["έγραψα","εγραψα"], explanation:"έγραψα = I wrote."},
+      { id:'q6', level:'intermediate', topic:'grammar', type:'mcq', prompt:"Which is the genitive case used for?", choices:["subject","possession","direct object"], answer:1, explanation:"Genitive often indicates possession."},
+      // Advanced
+      { id:'q7', level:'advanced', topic:'mood', type:'mcq', prompt:"Which particle introduces the subjunctive?", choices:["να","δε","αν"], answer:0, explanation:"'να' introduces the subjunctive."},
+      { id:'q8', level:'advanced', topic:'listening', type:'audio-fill', prompt:"Listen and transcribe (short):", audioText:"Θέλω να πάω", answer:["Θέλω να πάω","θελω να παω"], explanation:"Θέλω να πάω = I want to go."}
+    ];
+
+    const STORAGE_KEY = 'learn_greek_quiz_results_v1';
+
+    // Helpers
+    function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
+    function normalizeAnswer(str){
+      if(!str) return '';
+      return str.normalize('NFD').replace(/[\u0300-\u036f\u0384]/g,'').replace(/\s+/g,' ').toLowerCase().trim();
+    }
+
+    // quiz state
+    let state = { questions: [], answers: {}, index:0, level:'beginner' };
+
+    // UI refs
+    const startBtn = document.getElementById('startBtn');
+    const startQuick = document.getElementById('startQuick');
+    const levelSelect = document.getElementById('levelSelect');
+    const countSelect = document.getElementById('countSelect');
+    const quizView = document.getElementById('quizView');
+    const setup = document.getElementById('setup');
+    const qIndex = document.getElementById('qIndex');
+    const qTotal = document.getElementById('qTotal');
+    const qmetaLevel = document.getElementById('qLevel');
+    const questionBlock = document.getElementById('questionBlock');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultView = document.getElementById('resultView');
+
+    function prepareQuiz(level, count){
+      let pool = QUESTIONS.filter(q=>q.level===level);
+      if(pool.length === 0) pool = QUESTIONS.slice();
+      const chosen = shuffle(pool).slice(0, Math.min(count, pool.length));
+      state.questions = chosen;
+      state.answers = {};
+      state.index = 0;
+      state.level = level;
+      qTotal.textContent = chosen.length;
+      qmetaLevel.textContent = level;
+      renderQuestion();
+      setup.style.display='none';
+      quizView.style.display='block';
+      resultView.style.display='none';
+    }
+
+    function renderQuestion(){
+      const i = state.index;
+      const q = state.questions[i];
+      qIndex.textContent = i+1;
+      questionBlock.innerHTML = '';
+      if(!q) return;
+      const container = document.createElement('div');
+      container.innerHTML = `<div class="question"><strong>${q.prompt}</strong></div>`;
+      // handle types
+      if(q.type==='mcq' || q.type==='audio-mc'){
+        const choices = document.createElement('div'); choices.className='choices';
+        q.choices.forEach((c,ci)=>{
+          const ch = document.createElement('div'); ch.className='choice'; ch.textContent = c;
+          ch.onclick = ()=>{ state.answers[q.id]=ci; markSelected(choices,ci); };
+          choices.appendChild(ch);
+        });
+        container.appendChild(choices);
+        // if audio-mc, provide play button using speechSynthesis
+        if(q.type==='audio-mc' && q.audioText){
+          const play = document.createElement('button'); play.className='btn ghost'; play.textContent='Play audio';
+          play.onclick = ()=> speak(q.audioText);
+          container.appendChild(document.createElement('div')).appendChild(play);
+        }
+      } else if(q.type==='fill' || q.type==='audio-fill'){
+        const input = document.createElement('input'); input.type='text';
+        input.placeholder = 'Type answer here';
+        input.value = state.answers[q.id] || '';
+        input.oninput = ()=> state.answers[q.id] = input.value;
+        container.appendChild(document.createElement('div')).appendChild(input);
+        if(q.type==='audio-fill' && q.audioText){
+          const play = document.createElement('button'); play.className='btn ghost'; play.textContent='Play audio';
+          play.onclick = ()=> speak(q.audioText);
+          container.appendChild(document.createElement('div')).appendChild(play);
+        }
+      } else {
+        container.appendChild(document.createElement('div')).textContent = 'Question type not supported.';
+      }
+
+      // show explanation toggle if already answered and finished? not yet
+      questionBlock.appendChild(container);
+      highlightSelected();
+    }
+
+    function highlightSelected(){
+      const q = state.questions[state.index];
+      if(!q) return;
+      if(q.type==='mcq' || q.type==='audio-mc'){
+        const choices = questionBlock.querySelectorAll('.choice');
+        choices.forEach((c,ci)=>{
+          c.style.borderColor = (state.answers[q.id]===ci) ? 'var(--accent)' : '#eef4fb';
+          c.style.background = (state.answers[q.id]===ci) ? '#f1f8ff' : '';
+        });
+      } else if(q.type==='fill' || q.type==='audio-fill'){
+        const input = questionBlock.querySelector('input');
+        if(input) input.value = state.answers[q.id] || '';
+      }
+    }
+
+    function markSelected(choicesEl, selIdx){
+      // visual update
+      Array.from(choicesEl.children).forEach((child,ci)=>{
+        child.style.borderColor = (ci===selIdx)?'var(--accent)':'#eef4fb';
+        child.style.background = (ci===selIdx)?'#f1f8ff':'';
+      });
+    }
+
+    prevBtn.onclick = ()=>{
+      if(state.index>0){ state.index--; renderQuestion(); }
+    };
+    nextBtn.onclick = ()=>{
+      if(state.index < state.questions.length-1){ state.index++; renderQuestion(); }
+    };
+
+    submitBtn.onclick = ()=>{
+      if(!confirm('Submit quiz and see results?')) return;
+      const results = gradeQuiz();
+      saveResult(results);
+      showResults(results);
+    };
+
+    function gradeQuiz(){
+      const res = state.questions.map(q=>{
+        let correct=false, given=null;
+        if(q.type==='mcq' || q.type==='audio-mc'){
+          given = state.answers[q.id] == null ? null : state.answers[q.id];
+          correct = (given !== null && given === q.answer);
+        } else if(q.type==='fill' || q.type==='audio-fill'){
+          given = state.answers[q.id] || '';
+          correct = normalizeAnswer(given) === normalizeAnswer(q.answer instanceof Array ? q.answer[0] : q.answer);
+        }
+        return { id: q.id, prompt:q.prompt, correct, given, explanation: q.explanation, q };
+      });
+      const score = res.filter(r=>r.correct).length;
+      return { timestamp: new Date().toISOString(), level: state.level, total: res.length, score, items: res };
+    }
+
+    function saveResult(result){
+      try{
+        const all = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+        all.push(result);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+      }catch(e){ console.error('Failed to save', e); }
+    }
+
+    function showResults(r){
+      quizView.style.display='none';
+      resultView.style.display='block';
+      resultView.innerHTML = `<div style="font-size:1.1rem"><strong>Score: ${r.score} / ${r.total}</strong></div>`;
+      const list = document.createElement('div');
+      list.style.marginTop = '.6rem';
+      r.items.forEach((it,i)=>{
+        const row = document.createElement('div');
+        row.style.padding = '.6rem';
+        row.style.borderRadius = '8px';
+        row.style.marginTop = '.4rem';
+        row.style.background = it.correct ? 'rgba(47,133,90,0.06)' : 'rgba(229,62,62,0.06)';
+        row.innerHTML = `<div><strong>Q${i+1}:</strong> ${it.prompt}</div>
+                         <div class="small">Your answer: <em>${formatGiven(it.given, it.q)}</em> • ${it.correct ? '<span style="color:var(--success)">Correct</span>' : '<span style="color:var(--danger)">Incorrect</span>'}</div>
+                         <div class="small" style="margin-top:.25rem">Explanation: ${it.explanation || '-'}</div>
+                         <div style="margin-top:.25rem"><a href="index.html" class="small" style="color:var(--accent)">Go to related lesson</a></div>`;
+        list.appendChild(row);
+      });
+      resultView.appendChild(list);
+      const again = document.createElement('div'); again.style.marginTop='1rem';
+      again.innerHTML = `<button class="btn" id="retakeBtn">Retake</button> <button class="btn ghost" id="viewSaved">View Saved Results</button>`;
+      resultView.appendChild(again);
+      document.getElementById('retakeBtn').onclick = ()=> { resultView.style.display='none'; setup.style.display='block'; };
+      document.getElementById('viewSaved').onclick = ()=> showSaved();
+    }
+
+    function formatGiven(given, q){
+      if(given===null || given===undefined || given==='') return '<em>no answer</em>';
+      if(q.type==='mcq' || q.type==='audio-mc') return q.choices[given] || '<em>no answer</em>';
+      return given;
+    }
+
+    function showSaved(){
+      const all = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+      if(!all.length){ alert('No saved quiz results.'); return; }
+      let html = `<div style="font-weight:600">Saved quiz attempts</div>`;
+      all.slice().reverse().forEach((a,i)=>{
+        html += `<div style="margin-top:.4rem;padding:.5rem;border-radius:8px;background:#fff;border:1px solid #eef4fb">
+          <div><strong>${a.score}/${a.total}</strong> — ${new Date(a.timestamp).toLocaleString()} — level: ${a.level}</div>
+        </div>`;
+      });
+      resultView.innerHTML = html + `<div style="margin-top:.6rem"><button class="btn" onclick="location.reload()">Close</button></div>`;
+      resultView.style.display='block';
+      quizView.style.display='none';
+      setup.style.display='none';
+    }
+
+    // audio: use speechSynthesis to generate Greek audio
+    function speak(text){
+      if(!('speechSynthesis' in window)){ alert('Audio not supported in this browser.'); return; }
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'el-GR';
+      const voices = speechSynthesis.getVoices();
+      const gr = voices.find(v=>/el(-|_)?gr/i.test(v.lang) || /greek/i.test(v.name));
+      if(gr) msg.voice = gr;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(msg);
+    }
+
+    // entry: get query params
+    (function initFromQuery(){
+      const qs = new URLSearchParams(location.search);
+      const level = qs.get('level');
+      const lesson = qs.get('lesson');
+      if(level) levelSelect.value = level;
+      if(lesson){
+        // if a lesson param exists, try to pick corresponding level and prepare small quiz
+        const count = 5;
+        prepareQuiz(levelSelect.value, count);
+      }
+    })();
+
+    startBtn.onclick = ()=> prepareQuiz(levelSelect.value, parseInt(countSelect.value,10));
+    startQuick.onclick = ()=> {
+      // recommended: pick level based on progress in index.html (localStorage)
+      let recommended = 'beginner';
+      try{
+        const prog = JSON.parse(localStorage.getItem('learn_greek_progress_v1')||'{}');
+        const learned = prog.learned ? Object.keys(prog.learned).length : 0;
+        if(learned > 3) recommended = 'intermediate';
+        if(learned > 5) recommended = 'advanced';
+      }catch(e){}
+      levelSelect.value = recommended;
+      prepareQuiz(recommended, 10);
+    };
+
+    // keyboard navigation
+    document.addEventListener('keydown', (e)=>{
+      if(quizView.style.display==='block'){
+        if(e.key==='ArrowLeft') prevBtn.click();
+        if(e.key==='ArrowRight') nextBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
