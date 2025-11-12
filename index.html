@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Learn Greek — From Alphabet to Advanced</title>
+  <style>
+    :root{
+      --bg:#f7f8fb; --card:#fff; --muted:#666; --accent:#2b6cb0;
+      --success:#2f855a; --danger:#e53e3e; --glass: rgba(43,108,176,0.08);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Greek", "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#111;line-height:1.45}
+    header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:linear-gradient(90deg,#ffffff, #eef5ff);border-bottom:1px solid #e6eef9}
+    header h1{font-size:1.1rem;margin:0}
+    header .controls{display:flex;gap:.5rem;align-items:center}
+    .wrap{display:grid;grid-template-columns:260px 1fr;gap:1rem;padding:1rem;max-width:1100px;margin:0 auto}
+    nav{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 2px 6px rgba(10,20,40,0.04);height:calc(100vh - 120px);overflow:auto}
+    nav h2{margin:.25rem 0 .5rem;font-size:.95rem}
+    .section-list{list-style:none;padding:0;margin:0}
+    .section-list li{margin:.35rem 0}
+    .link{display:flex;justify-content:space-between;align-items:center;padding:.45rem .6rem;border-radius:8px;color:var(--accent);text-decoration:none}
+    .link:hover{background:var(--glass)}
+    main{padding:1rem;background:var(--card);border-radius:10px;box-shadow:0 2px 14px rgba(10,20,40,0.04);min-height:70vh}
+    .lesson-title{display:flex;gap:1rem;align-items:baseline}
+    .subtitle{color:var(--muted);font-size:.95rem}
+    .meta{display:flex;gap:.5rem;color:var(--muted);font-size:.9rem;margin-top:.35rem}
+    .content-block{margin-top:1rem}
+    .examples{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+    .card{background:#fff;padding:.7rem;border-radius:8px;border:1px solid #f0f4fb}
+    .practice{margin-top:1rem}
+    .btn{background:var(--accent);color:#fff;padding:.5rem .7rem;border:none;border-radius:8px;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--glass)}
+    .small{font-size:.9rem;padding:.35rem .5rem;border-radius:6px}
+    .feedback{margin-top:.5rem;font-weight:600}
+    .progress{background:#e6eef9;border-radius:999px;height:12px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent), #6fb2ff)}
+    footer{padding:1rem;text-align:center;color:var(--muted);font-size:.9rem;margin-top:1rem}
+    @media(max-width:900px){
+      .wrap{grid-template-columns:1fr; padding:0.5rem}
+      nav{height:auto;display:flex;overflow:auto;order:2}
+      main{order:1}
+    }
+    /* small utilities */
+    .kbd{background:#f6f8fb;border:1px solid #e6eef9;padding:.15rem .4rem;border-radius:6px;font-family:monospace}
+    a.external{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Learn Greek — Alphabet → Advanced</h1>
+    <div class="controls">
+      <div id="progressContainer" style="min-width:150px">
+        <div style="font-size:.85rem;color:var(--muted)">Progress</div>
+        <div class="progress" aria-hidden="true"><i id="progressBar" style="width:0%"></i></div>
+      </div>
+      <button id="toQuiz" class="btn small">Take a Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav aria-label="Sections">
+      <h2>Lessons</h2>
+      <ul class="section-list" id="sectionList"></ul>
+
+      <h2 style="margin-top:1rem">Quick Links</h2>
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+        <a class="link" href="#" id="resumeLink"><span>Resume</span></a>
+        <a class="link" href="quiz.html" id="assessLink"><span>Assessment Center</span></a>
+        <a class="link" href="#" id="resetProgress"><span style="color:var(--danger)">Reset Progress</span></a>
+      </div>
+    </nav>
+
+    <main id="mainContent" tabindex="0">
+      <!-- Dynamic content injected by JS -->
+      <div style="text-align:center;color:var(--muted);padding:3rem 1rem">
+        <h2 style="margin-top:0">Welcome</h2>
+        <p style="max-width:60ch;margin:0 auto">
+          This mini-course teaches Modern Greek from the alphabet through advanced grammar.
+          Use the left menu to navigate lessons. Each lesson has examples, play buttons for pronunciation,
+          and quick practice. Click "Take a Quiz" to go to the assessment page and test your knowledge.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    Built with vanilla HTML/CSS/JS • All data stored locally in your browser • No servers involved.
+  </footer>
+
+  <script>
+    // Data model: lessons with content and small in-page exercises
+    const LESSONS = [
+      {
+        id: "alphabet",
+        title: "Greek Alphabet & Pronunciation",
+        level: "beginner",
+        est: "15m",
+        blocks: [
+          { type: "html", content: "<p>The Greek alphabet has 24 letters. Below are the letters with approximate pronunciations and examples.</p>" },
+          { type: "table", rows:[
+            ["Α α", "alpha", "ά /a/ — άνθρωπος (ánthropos) = person"],
+            ["Β β", "vita (v)", "βιβλίο (vivlío) = book"],
+            ["Γ γ", "gamma (ɣ before vowels)", "γκά (g) in some cases — γάτα (gáta) = cat"],
+            ["Δ δ", "delta (d)", "δώρο (dóro) = gift"],
+            ["Ε ε", "epsilon (e)", "ελπίδα (elpída) = hope"],
+            ["Ζ ζ", "zeta (z)", "ζωή (zoí) = life"],
+            ["Η η", "eta (i)", "ήλιος (ílios) = sun"],
+            ["Θ θ", "theta (th)", "θέμα (théma) = subject"],
+            ["Ι ι", "iota (i)", "ίσως (ísos) = maybe"],
+            ["Κ κ", "kappa (k)", "καλή (kalí) = good"],
+            ["Λ λ", "lambda (l)", "λαός (laós) = people"],
+            ["Μ μ", "mu (m)", "μήλο (mílo) = apple"],
+            ["Ν ν", "nu (n)", "νέος (néos) = young"],
+            ["Ξ ξ", "xi (ks)", "ξύλο (xýlo) = wood"],
+            ["Ο ο", "omicron (o)", "όχι (óchi) = no"],
+            ["Π π", "pi (p)", "παιδί (paidhí) = child"],
+            ["Ρ ρ", "rho (r)", "ρόδο (ródo) = rose"],
+            ["Σ σ/ς", "sigma (s)", "σπίτι (spíti) = house"],
+            ["Τ τ", "tau (t)", "τυρί (tyrí) = cheese"],
+            ["Υ υ", "upsilon (i/ü)", "ύπνος (ýpnos) = sleep"],
+            ["Φ φ", "phi (f)", "φωνή (foní) = voice"],
+            ["Χ χ", "chi (x/ɣ)", "χώρα (chóra) = country"],
+            ["Ψ ψ", "psi (ps)", "ψάρι (psári) = fish"],
+            ["Ω ω", "omega (o)", "ώρα (óra) = hour"]
+          ]},
+          { type: "practice", items: [
+            { id:"p-alpha-1", type:"mcq", prompt:"What sound does 'Ω ω' usually represent?", choices:["/a/","/o/","/i/","/u/"], answer:1, explanation:"Ω (omega) represents an /o/ sound."},
+            { id:"p-alpha-2", type:"fill", prompt:"Type the Greek word for 'house' (lowercase).", answer:["σπίτι"], explanation:"House = σπίτι."}
+          ]}
+        ]
+      },
+      {
+        id:"beginner-phrases",
+        title:"Beginner — Basics & Phrases",
+        level:"beginner",
+        est:"20m",
+        blocks:[
+          { type:"html", content:"<p>Common greetings and essential words.</p>" },
+          { type:"list", items:[
+              ["καλημέρα", "Good morning"],
+              ["γεια σου / γεια σας", "Hello (informal / formal)"],
+              ["ευχαριστώ", "Thank you"],
+              ["παρακαλώ", "Please / You're welcome"],
+              ["συγγνώμη", "Sorry / Excuse me"]
+            ]
+          },
+          { type:"practice", items:[
+            { id:"p-b1-1", type:"mcq", prompt:"What does 'ευχαριστώ' mean?", choices:["Hello","Goodbye","Thank you","Please"], answer:2, explanation:"ευχαριστώ = thank you."},
+            { id:"p-b1-2", type:"fill", prompt:"Type 'good morning' in Greek.", answer:["καλημέρα","καλημερα"], explanation:"καλημέρα (with tonos) is correct; we also accept without tonos."}
+          ]}
+        ]
+      },
+      {
+        id:"beginner-grammar",
+        title:"Beginner — Articles & 'to be' (είμαι)",
+        level:"beginner",
+        est:"20m",
+        blocks:[
+          { type:"html", content:"<p>Definite articles: ο (masc), η (fem), το (neut). The verb 'to be' — είμαι.</p>" },
+          { type:"examples", items:[
+            { g:"ο άνθρωπος", e:"the man (masc)" },
+            { g:"η γυναίκα", e:"the woman (fem)" },
+            { g:"το βιβλίο", e:"the book (neut)" },
+            { g:"Είμαι δάσκαλος.", e:"I am a teacher."}
+          ]},
+          { type:"practice", items:[
+            { id:"p-b2-1", type:"mcq", prompt:"Which article for 'βιβλίο'?", choices:["ο","η","το"], answer:2, explanation:"βιβλίο is neuter, so 'το'."},
+            { id:"p-b2-2", type:"fill", prompt:"Translate: 'I am (male) a student' → Greek (one word for student is 'φοιτητής').", answer:["Είμαι φοιτητής","είμαι φοιτητής","ειμαι φοιτητής"], explanation:"Είμαι φοιτητής."}
+          ]}
+        ]
+      },
+      {
+        id:"intermediate-verbs",
+        title:"Intermediate — Past Tenses (Aorist) & Verbs",
+        level:"intermediate",
+        est:"25m",
+        blocks:[
+          { type:"html", content:"<p>Introduction to the aorist (simple past). Example: έγραψα (I wrote) from γράφω.</p>" },
+          { type:"examples", items:[
+            { g:"γράφω → έγραψα", e:"I write → I wrote" },
+            { g:"λέω → είπα", e:"I say → I said" }
+          ]},
+          { type:"practice", items:[
+            { id:"p-i1", type:"mcq", prompt:"What is the aorist (I) of 'γράφω'?", choices:["γράφω","έγραψα","έγραφα"], answer:1, explanation:"έγραψα is the aorist (I wrote)."},
+            { id:"p-i2", type:"fill", prompt:"Type the aorist of 'λέω' (I said).", answer:["είπα","ειπα"], explanation:"είπα (έιπα without accent also accepted)."}
+          ]}
+        ]
+      },
+      {
+        id:"advanced-subjunctive",
+        title:"Advanced — Subjunctive, Clauses & Idioms",
+        level:"advanced",
+        est:"30m",
+        blocks:[
+          { type:"html", content:"<p>The subjunctive mood is used after specific particles like να (να + subjunctive). Example: να πάω (that I go / to go).</p>" },
+          { type:"examples", items:[
+            { g:"Θέλω να πάω.", e:"I want to go."},
+            { g:"Μπορεί να έρθει.", e:"He may come."}
+          ]},
+          { type:"practice", items:[
+            { id:"p-a1", type:"mcq", prompt:"Which particle introduces the subjunctive in Modern Greek?", choices:["να","ναί","δε"], answer:0, explanation:"'να' introduces the subjunctive."},
+            { id:"p-a2", type:"fill", prompt:"Translate: 'I want him to come' → Greek (one sentence).", answer:["Θέλω να έρθει","Θέλω να ερθει"], explanation:"Θέλω να έρθει."}
+          ]}
+        ]
+      }
+    ];
+
+    // Utilities
+    const STORAGE_KEY = 'learn_greek_progress_v1';
+    const QUIZ_STORE = 'learn_greek_quiz_results_v1';
+    function loadProgress(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY))||{} }catch(e){return{}}}
+    function saveProgress(p){ localStorage.setItem(STORAGE_KEY, JSON.stringify(p||{})) }
+    function markLessonLearned(id){
+      const p = loadProgress(); p.learned = p.learned||{}; p.learned[id]=true; saveProgress(p); renderProgress();
+    }
+    function resetProgress(){
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(QUIZ_STORE);
+      renderProgress();
+      alert('Progress and stored quiz results cleared.');
+    }
+    // normalize Greek answers: remove diacritics and case
+    function normalizeAnswer(str){
+      if(!str) return '';
+      // NFD + remove combining marks (accents) + lowercase + trim
+      return str.normalize('NFD').replace(/[\u0300-\u036f\u0384]/g,'').replace(/\s+/g,' ').toLowerCase().trim();
+    }
+
+    // render nav
+    const sectionList = document.getElementById('sectionList');
+    LESSONS.forEach(ls=>{
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className='link';
+      a.innerHTML = `<span>${ls.title}</span><small style="color:var(--muted)">${ls.level}</small>`;
+      a.onclick = (e)=>{
+        e.preventDefault();
+        renderLesson(ls.id);
+      };
+      li.appendChild(a);
+      sectionList.appendChild(li);
+    });
+
+    const main = document.getElementById('mainContent');
+
+    function renderLesson(id){
+      const lesson = LESSONS.find(l=>l.id===id);
+      if(!lesson) return;
+      main.innerHTML = '';
+      const title = document.createElement('div');
+      title.className='lesson-title';
+      title.innerHTML = `<div>
+        <h2 style="margin:0">${lesson.title}</h2>
+        <div class="subtitle">${lesson.level} • Estimated ${lesson.est}</div>
+        <div class="meta"><div class="small kbd">Lesson ID: ${lesson.id}</div></div>
+      </div>`;
+      main.appendChild(title);
+
+      lesson.blocks.forEach(block=>{
+        const container = document.createElement('div');
+        container.className='content-block';
+        if(block.type==='html'){
+          container.innerHTML = block.content;
+        } else if(block.type==='table'){
+          const t = document.createElement('div');
+          t.className='examples';
+          block.rows.forEach(r=>{
+            const c = document.createElement('div'); c.className='card';
+            c.innerHTML = `<strong style="font-size:1.05rem">${r[0]}</strong><div style="font-size:.95rem;color:var(--muted)">${r[1]}</div><div style="margin-top:.35rem">${r[2]}</div>`;
+            t.appendChild(c);
+          });
+          container.appendChild(t);
+        } else if(block.type==='list'){
+          const ul = document.createElement('ul');
+          block.items.forEach(it=>{
+            const li = document.createElement('li');
+            li.className='card';
+            li.style.marginTop='.4rem';
+            li.innerHTML = `<strong>${it[0]}</strong> — <span style="color:var(--muted)">${it[1]}</span> <button class="btn small" style="float:right" onclick="speakText('${escapeForSpeech(it[0])}')">Play</button>`;
+            ul.appendChild(li);
+          });
+          container.appendChild(ul);
+        } else if(block.type==='examples'){
+          const ex = document.createElement('div');
+          ex.className='examples';
+          block.items.forEach(it=>{
+            const c = document.createElement('div'); c.className='card';
+            c.innerHTML = `<div><strong>${it.g}</strong></div><div style="color:var(--muted)">${it.e}</div><div style="margin-top:.4rem"><button class="btn small" onclick="speakText('${escapeForSpeech(it.g)}')">Play</button></div>`;
+            ex.appendChild(c);
+          });
+          container.appendChild(ex);
+        } else if(block.type==='practice'){
+          const pr = document.createElement('div');
+          pr.className='practice';
+          pr.innerHTML = `<h3 style="margin:.2rem 0">Practice</h3>`;
+          block.items.forEach(item=>{
+            const box = document.createElement('div'); box.className='card';
+            box.style.marginTop='.5rem';
+            if(item.type==='mcq'){
+              box.innerHTML = `<div><strong>${item.prompt}</strong></div>`;
+              item.choices.forEach((c,ci)=>{
+                const btn = document.createElement('button');
+                btn.className='small ghost';
+                btn.style.marginRight='.3rem';
+                btn.textContent = c;
+                btn.onclick = ()=>{
+                  const correct = (ci===item.answer);
+                  showFeedback(box, correct, item.explanation);
+                };
+                box.appendChild(btn);
+              });
+            } else if(item.type==='fill'){
+              box.innerHTML = `<div><strong>${item.prompt}</strong></div><div style="margin-top:.5rem"><input placeholder="Type answer" style="padding:.45rem;border-radius:6px;border:1px solid #e6eef9;width:60%"><button class="btn small" style="margin-left:.4rem">Check</button></div>`;
+              const input = box.querySelector('input');
+              const btn = box.querySelector('button');
+              btn.onclick = ()=>{
+                const norm = normalizeAnswer(input.value);
+                const accepted = (Array.isArray(item.answer)? item.answer : [item.answer]).map(a=>normalizeAnswer(a));
+                const ok = accepted.includes(norm);
+                showFeedback(box, ok, item.explanation);
+              };
+            }
+            pr.appendChild(box);
+          });
+          container.appendChild(pr);
+        }
+        main.appendChild(container);
+      });
+
+      const actionRow = document.createElement('div');
+      actionRow.style.marginTop = '1rem';
+      actionRow.innerHTML = `<button id="markLearned" class="btn">Mark as learned</button> <a class="btn ghost" href="quiz.html?level=${encodeURIComponent(lesson.level)}&lesson=${encodeURIComponent(lesson.id)}" style="margin-left:.5rem">Take Lesson Quiz</a>`;
+      main.appendChild(actionRow);
+      document.getElementById('markLearned').onclick = ()=>{
+        markLessonLearned(lesson.id);
+        alert('Marked as learned.');
+      };
+      // set focus for accessibility
+      main.focus();
+    }
+
+    function showFeedback(container, ok, explanation){
+      let fb = container.querySelector('.feedback');
+      if(!fb){ fb = document.createElement('div'); fb.className='feedback'; container.appendChild(fb); }
+      fb.textContent = ok ? 'Correct ✓ ' + (explanation||'') : 'Incorrect ✕ ' + (explanation||'');
+      fb.style.color = ok ? 'var(--success)' : 'var(--danger)';
+    }
+
+    function renderProgress(){
+      const p = loadProgress();
+      const learned = p.learned ? Object.keys(p.learned).length : 0;
+      const total = LESSONS.length;
+      const pct = Math.round((learned/total)*100);
+      document.getElementById('progressBar').style.width = pct + '%';
+      const resume = document.getElementById('resumeLink');
+      if(p.lastLesson) resume.href = '#', resume.onclick = (e)=>{ e.preventDefault(); renderLesson(p.lastLesson); };
+      else resume.href = '#', resume.onclick = (e)=>{ e.preventDefault(); alert('No last lesson — pick a lesson from the left.');};
+    }
+
+    // Save last visited lesson
+    (function attachGlobalHandlers(){
+      document.addEventListener('click', function(e){
+        const target = e.target;
+        // find lesson id if present in link to lesson
+      });
+      document.getElementById('toQuiz').onclick = ()=> location.href='quiz.html';
+      document.getElementById('assessLink').onclick = ()=> { /* default */ };
+      document.getElementById('resetProgress').onclick = (e)=>{ e.preventDefault(); if(confirm('Clear all progress and quiz results?')) resetProgress(); };
+      // store last visited lesson on render
+      const originalRenderLesson = renderLesson;
+      renderLesson = function(id){
+        const p = loadProgress(); p.lastLesson = id; saveProgress(p);
+        originalRenderLesson(id);
+      };
+    })();
+
+    // text-to-speech helper using SpeechSynthesis
+    function escapeForSpeech(s){
+      // escape single quotes for inline usage
+      return (s||'').replace(/'/g,"ʼ").replace(/"/g,'”');
+    }
+    function speakText(text){
+      if(!('speechSynthesis' in window)){
+        alert('Speech synthesis not supported in this browser.');
+        return;
+      }
+      const msg = new SpeechSynthesisUtterance(text);
+      // Try Greek voice if available
+      const voices = speechSynthesis.getVoices();
+      const gr = voices.find(v=>/el(-|_)?gr/i.test(v.lang) || /greek/i.test(v.name));
+      if(gr) msg.voice = gr;
+      msg.lang = 'el-GR';
+      msg.rate = 0.9;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(msg);
+    }
+
+    // initialize
+    renderProgress();
+  </script>
+</body>
+</html>
