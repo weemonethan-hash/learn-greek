@@ -58,7 +58,6 @@
     .controls-top{display:flex;gap:.6rem;align-items:center}
     .search{display:flex;gap:.5rem;padding:.45rem;background:#f8fafc;border-radius:10px;border:1px solid #edf2ff;align-items:center}
     .search input{border:0;background:transparent;outline:none;font-size:.95rem;width:100%}
-    .kbd{background:#f6f8fb;border:1px solid #e6eef9;padding:.15rem .4rem;border-radius:6px;font-family:monospace}
     .muted{color:var(--muted)}
     .lesson-actions{display:flex;gap:.5rem;align-items:center}
     .check{color:var(--success);font-weight:700}
@@ -112,7 +111,7 @@
       <h2 style="margin-top:1rem">Quick Links</h2>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
         <a class="section-item link-row" href="#" id="resumeLink"><span>Resume</span><span class="muted small">Last</span></a>
-        <a class="section-item link-row" href="greek_quiz.html" id="assessLink"><span>Assessment Center</span><span class="badge">Quiz</span></a>
+        <a class="section-item link-row" href="quiz.html" id="assessLink"><span>Assessment Center</span><span class="badge">Quiz</span></a>
         <a class="section-item link-row" href="#" id="resetProgress"><span style="color:var(--danger)">Reset Progress</span><span class="muted small">Clears data</span></a>
       </div>
     </nav>
@@ -468,7 +467,7 @@
       </div>
       <div class="lesson-actions">
         <button id="markLearned" class="btn small">Mark as learned</button>
-        <a class="btn ghost small" href="greek_quiz.html?level=${encodeURIComponent(lesson.level)}&lesson=${encodeURIComponent(lesson.id)}">Take Lesson Quiz</a>
+        <a class="btn ghost small" href="quiz.html?level=${encodeURIComponent(lesson.level)}&lesson=${encodeURIComponent(lesson.id)}">Take Lesson Quiz</a>
       </div>`;
       main.appendChild(title);
 
@@ -602,7 +601,7 @@
 
     // attach handlers & initialize
     (function attachHandlers(){
-      document.getElementById('toQuiz').onclick = ()=> location.href='greek_quiz.html';
+      document.getElementById('toQuiz').onclick = ()=> location.href='quiz.html';
       document.getElementById('resetProgress').onclick = (e)=>{ e.preventDefault(); if(confirm('Clear all progress and quiz results?')) resetProgress(); };
       searchInput.addEventListener('input', () => renderNav());
       levelFilter.addEventListener('change', () => renderNav());
