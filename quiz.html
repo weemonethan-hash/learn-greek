@@ -37,7 +37,7 @@
       </div>
     </div>
     <div style="display:flex;gap:.6rem;align-items:center">
-      <a href="learn_greek_course.html" class="small" style="color:var(--accent);text-decoration:none">Back to Course</a>
+      <a href="index.html" class="small" style="color:var(--accent);text-decoration:none">Back to Course</a>
     </div>
   </header>
 
@@ -274,7 +274,7 @@
         row.innerHTML = `<div><strong>Q${i+1}:</strong> ${it.prompt}</div>
                          <div class="small">Your answer: <em>${formatGiven(it.given, it.q)}</em> • ${it.correct ? '<span style="color:var(--success)">Correct</span>' : '<span style="color:var(--danger)">Incorrect</span>'}</div>
                          <div class="small" style="margin-top:.25rem">Explanation: ${it.explanation || '-'}</div>
-                         <div style="margin-top:.25rem"><a href="learn_greek_course.html" class="small" style="color:var(--accent)">Open related lesson</a></div>`;
+                         <div style="margin-top:.25rem"><a href="index.html" class="small" style="color:var(--accent)">Open related lesson</a></div>`;
         list.appendChild(row);
       });
       resultView.appendChild(list);
@@ -302,9 +302,9 @@
         </div>`;
       });
       resultView.innerHTML = html + `<div style="margin-top:.6rem"><button class="btn" onclick="location.reload()">Close</button></div>`;
-      resultView.style.display='block';
-      quizView.style.display='none';
-      setup.style.display='none';
+      resultView.style.display = 'block';
+      quizView.style.display = 'none';
+      setup.style.display = 'none';
     }
 
     // audio using speechSynthesis
